@@ -14,25 +14,27 @@ import org.firstinspires.ftc.robotcore.external.Telemetry;
 
 @Config
 public class nematocyst {
-    private DcMotor pivot;
-    private DcMotor slideMotor;
-    private Servo claw;
-    private Servo wrist;
+    public DcMotor pivot;
+    public DcMotor slideMotor;
+    public Servo claw;
+    public Servo wrist;
     double pivotPower;
 //    private static final int degreesToTicks = 1425 /360;
 //    private static final double inchesToDegrees =  1/2.067;
-    private static final double ticksPerInch = (double) 8192/(Math.PI * 2 * 2.4 / 2.54 ); // TODO: wtf???
+    private static final double ticksPerInch = (double) 1425/(Math.PI * 3.75); // TODO: wtf???
     private static final double Max_Extension = 22 * ticksPerInch; // Horizontal Max Ticks
-    private static final double degPerTick = (double) 360 /752;
+    private static final double degPerTick = (double) 360/1425;
     // PID constants
-    public double sP = 0;
+    public double sP = 0.0012;
     public double sI = 0.000;
     public double sD = 0.00;
-    public double pP = 0.00425;
+    public double pP = 0.00275;
     public double pI = 0;
-    public double pD = 8e-6;
-    public double pCos = 0.3375;
-    public double pExt = 1e-7;
+    public double pD = 0.00002;
+    public double pCos = 0.325;
+    public double pExt = 0.000075;
+    boolean isTargAngDown = false;
+    boolean justWasTargAngDown = false;
     PIDFController slidePID;
 //    ElapsedTime pidTimer;
     // PID variables
@@ -42,7 +44,8 @@ public class nematocyst {
     private int targetSlidePosition = (int) (targSlideHeight * ticksPerInch);  // Starting at initial position (adjust)
     private int targPivotPos;
     private int maxSlidePos;
-    private int maxPivotPos = -195;
+    private int maxPivotPos = -350;
+    boolean isPullingDown = false;
     ElapsedTime pivotTimer;
     OpMode opMode;
     public nematocyst(OpMode OM) {
@@ -71,42 +74,50 @@ public class nematocyst {
     }
 
     public void loop(double P, double I, double D) {
-        if (opMode.gamepad1.a) {
-            goUp(0);
-        } else if (opMode.gamepad1.x) {
-            goGround(13.0);
-        } else if (opMode.gamepad1.b) {
-            goOut(28);
-        } else if (opMode.gamepad1.y) {
-            goOut(45.0);
-        }
-        if (opMode.gamepad1.dpad_up) {
-            wristOut();
-        } else if (opMode.gamepad1.dpad_down) {
-            wristIn();
-        } else if (opMode.gamepad1.dpad_right) {
-            grab();
-        } else if (opMode.gamepad1.dpad_left) {
-            release();
-        } else if (opMode.gamepad1.left_bumper) {
-            wristDown();
-        }
         targPivotPos = Math.min(0, Math.max(targPivotPos, maxPivotPos));
         // Ensure the motor does not exceed max forward extension
-        double out = slidePID.calculate(slideMotor.getCurrentPosition(), targetSlidePosition);
+        double out;
+        if (!justWasTargAngDown) {
+            out = slidePID.calculate(slideMotor.getCurrentPosition(), targetSlidePosition);
+            pivotPower = calculatePID(targPivotPos, pivot.getCurrentPosition());
+        } else {
+            out = slidePID.calculate(slideMotor.getCurrentPosition(), 0);
+            if (slideMotor.getCurrentPosition() > 300) {
+                pivotPower = 0;
+            } else {
+                justWasTargAngDown = false;
+            }
+        }
+        if (isPullingDown) {
+            out = -1;
+        }
+
+
+
 //        SlewRateLimiter slideLimiter = new SlewRateLimiter(0.5); //TODO: Tune this
-
-
         slidePID.setPIDF(P, I, D,0);
-
         slideMotor.setPower(out);
-        pivotPower = calculatePID(targPivotPos, pivot.getCurrentPosition());
         pivot.setPower(pivotPower); // use updatdePID to fix this
+    }
+    public void loop() {
+        this.loop(sP, sI, sD);
     }
     public double getHypotenuseMax(double height) {
         double in_inch;
         in_inch=Math.sqrt(height*height+22*22);
         return in_inch*ticksPerInch;
+    }
+    public double getHypotenuseSpecimen(double height) {
+        double in_inch;
+        in_inch=Math.sqrt(height*height+10*10);
+        return in_inch*ticksPerInch;
+    }
+    public void hangSetup() {
+        targetSlidePosition = 600;
+        targPivotPos = -15;
+    }
+    public void hangReal() {
+        isPullingDown = true;
     }
     public void updatePID(double aP, double aI, double aD, double aCos, double aExt) {
         pP = aP;
@@ -119,21 +130,68 @@ public class nematocyst {
         slidePID.setPIDF(P, I, D, 0);
     }
     public void goUp(double inches) {
+        if (isTargAngDown) {
+            justWasTargAngDown = true;
+        }
+        isTargAngDown = false;
         targPivotPos = -15;
         targSlideHeight = inches;
         targetSlidePosition = (int) (targSlideHeight * ticksPerInch);
     }
     public void goOut(double inches) {
-        targSlideHeight = (1/ticksPerInch) * getHypotenuseMax(inches);
-        double pivAng = 15 + 90 - Math.asin(inches/targSlideHeight);
-        targPivotPos = (int) (-5 - (pivAng * 105/190));
-        targetSlidePosition = (int) (targSlideHeight * ticksPerInch);
+//        isTargAngDown = false;
+//        targSlideHeight = (1/ticksPerInch) * getHypotenuseMax(inches);
+//        double pivAng = 15 + 90 - Math.asin(inches/targSlideHeight);
+//        targPivotPos = (int) (-5 - (pivAng * 105/190));
+//        targetSlidePosition = (int) (targSlideHeight * ticksPerInch);
+//
+        targetSlidePosition = 2400;
+        targPivotPos = -50;
+        if (isTargAngDown) {
+            justWasTargAngDown = true;
+        }
+        isTargAngDown = false;
+    }
+    public void touchBar() {
+        targPivotPos = -50;
+        targetSlidePosition = 400;
+        isTargAngDown = false;
+    }
+    public void goSpecimen(double inches) {
+//        isTargAngDown = false;
+//        targSlideHeight = (1/ticksPerInch) * getHypotenuseSpecimen(inches);
+//        double pivAng = 15 + 90 - Math.asin(inches/targSlideHeight);
+//        targPivotPos = (int) (-5 - (pivAng * 105/190));
+//        targetSlidePosition = (int) (targSlideHeight * ticksPerInch);
+        targPivotPos = -50;
+        targetSlidePosition = 2000;
+        if (isTargAngDown) {
+            justWasTargAngDown = true;
+        }
+        isTargAngDown = false;
+    }
+    public void goSpecimenDown(double inches) {
+//        isTargAngDown = false;
+//        targSlideHeight = (1/ticksPerInch) * getHypotenuseSpecimen(inches);
+//        double pivAng = 15 + 90 - Math.asin(inches/targSlideHeight);
+//        targPivotPos = (int) (-5 - (pivAng * 105/190));
+//        targetSlidePosition = (int) (targSlideHeight * ticksPerInch);
+        targPivotPos = -50;
+        targetSlidePosition = 1400;
+        if (isTargAngDown) {
+            justWasTargAngDown = true;
+        }
+        isTargAngDown = false;
     }
     public void goGround(double inches) {
-        targSlideHeight = inches;
-        targPivotPos = -168;
-        targetSlidePosition = (int) (targSlideHeight * ticksPerInch);
-        targetSlidePosition = Math.max(0, Math.min(targetSlidePosition, maxSlidePos));
+
+        targPivotPos = -355;
+        targetSlidePosition = 1500;
+        isTargAngDown = true;
+        if (isTargAngDown) {
+            justWasTargAngDown = false;
+        }
+        wristOut();
     }
     public boolean isAtTargetHeight() {
         if (Math.abs(slideMotor.getCurrentPosition()/ticksPerInch - targSlideHeight) < 2) {
@@ -151,18 +209,19 @@ public class nematocyst {
     }
     // Initialize motor
     public void manualOut() {
-        targetSlidePosition += 1;
+        targetSlidePosition += 10;
     }
     public void manualIn() {
-        targetSlidePosition -= 1;
+        targetSlidePosition -= 10;
     }
     public void manualUp() { targPivotPos++;}
     public void manualDown() { targPivotPos--;}
     public void grab() { claw.setPosition(0); }
-    public void release() {claw.setPosition(0.12);}
-    public void wristOut() {wrist.setPosition(0);}
-    public void wristIn() {wrist.setPosition(.75);}
-    public void wristDown() {wrist.setPosition(.25);}
+    public void release() {claw.setPosition(0.4);}
+    public void wristOut() {wrist.setPosition(.25);}
+    public void wristIn() {wrist.setPosition(.9);}
+    public void wristDown() {wrist.setPosition(.5);}
+    public void wristSpecimen() { wrist.setPosition(.375); }
 
 
 
@@ -179,6 +238,7 @@ public class nematocyst {
         opMode.telemetry.addData("Pivot Targ", targPivotPos);
         opMode.telemetry.addData("Pivot Pos", pivot.getCurrentPosition());
         opMode.telemetry.addData("Pivot Power", pivotPower);
+        opMode.telemetry.addData("Claw", claw.getPosition());
         opMode.telemetry.update();
     }
     public void getTelemetry(Telemetry t) {
@@ -205,8 +265,20 @@ public class nematocyst {
         double derivative = ((error - lastError)/pivotTimer.seconds());
         lastError = error;
         // PID output
-        double ff = ((pExt * slideMotor.getCurrentPosition())-pCos*Math.cos(Math.toRadians(85-(current * degPerTick))));
-        double output = (error * pP) + (integral * pI) + (derivative * pD) + (ff);
+        double ff;
+        double output;
+        if (isTargAngDown) {
+            if (pivot.getCurrentPosition() >= -335) {
+                ff = ((pExt * slideMotor.getCurrentPosition()) - pCos * Math.cos(Math.toRadians(85 - (current * degPerTick))));
+                output = (error * 0.001625) + ff;
+            } else {
+             output = 0;
+            }
+        } else {
+            ff = ((pExt * slideMotor.getCurrentPosition()) - pCos * Math.cos(Math.toRadians(85 - (current * degPerTick))));
+            output = (error * pP) + (integral * pI) + (derivative * pD) + (ff);
+        }
+
         pivotTimer.reset();
         // Limit the output to motor range [-1, 1]
         output = Math.max(-1, Math.min(output, 1));
