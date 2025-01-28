@@ -14,13 +14,13 @@ public class slideTest extends OpMode {
     nematocyst slide;
     FtcDashboard dash;
     Telemetry t2;
-    public static double sP = 0.0009;
+    public static double sP = 0.0012;
     public static double sI = 0.000;
     public static double sD = 0.00;
-    public static double angP = 0.00375;
-    public static double angI = 0;
-    public static double angD = 0.00006;
-    public static double angCos = 0.345;
+    public static double angP = 0.0041;
+    public static double angI = 0.00015;
+    public static double angD = 0.0004;
+    public static double angCos = 0.325;
     public static double angExt = 0.000075;
     @Override
     public void init() {
@@ -32,27 +32,31 @@ public class slideTest extends OpMode {
 
     @Override
     public void loop() {
-        if (gamepad2.a) {
+        if (gamepad2.a || gamepad2.cross) {
             slide.goUp(0);
-        } else if (gamepad2.x) {
+        } else if (gamepad2.x || gamepad2.square) {
             slide.goGround(13.0);
-        } else if (gamepad2.b) {
+        } else if (gamepad2.b || gamepad2.circle) {
             slide.goSpecimen(28);
-        } else if (gamepad2.y) {
+        } else if (gamepad2.y || gamepad2.triangle) {
             slide.goOut(36.0);
         } else if (gamepad2.right_trigger > 0.5) {
             slide.goSpecimenDown(2);
         }
-        if (gamepad2.dpad_up) {
-            slide.wristOut();
-        } else if (gamepad2.dpad_down) {
+
+
+        if (gamepad2.dpad_down) {
             slide.wristIn();
+        } else if (gamepad2.dpad_up) {
+            slide.wristOut();
         } else if (gamepad2.left_bumper) {
-            slide.claw.setPosition(slide.claw.getPosition()+0.005);
+            slide.grab();
         } else if (gamepad2.right_bumper) {
-            slide.claw.setPosition(slide.claw.getPosition()-0.005);
+            slide.release();
         } else if (gamepad2.dpad_left) {
             slide.wristDown();
+        } else if (gamepad2.dpad_right) {
+            slide.wristSpecimen();
         }
 
         slide.loop(sP, sI, sD);

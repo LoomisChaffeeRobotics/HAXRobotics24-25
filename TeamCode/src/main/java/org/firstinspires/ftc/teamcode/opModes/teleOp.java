@@ -13,14 +13,14 @@ import org.firstinspires.ftc.teamcode.subsystems.swerve.SwerveDrive;
 @Config
 
 public class teleOp extends OpMode {
-    public static double sP = 0.001;
+    public static double sP = 0.0015;
     public static double sI = 0.000;
     public static double sD = 0.00;
-    public double angP = 0.0045;
-    public double angI = 0;
-    public double angD = 0.00002;
-    public double angCos = 0.325;
-    public double angExt = 0.000075;
+    public static double angP = 0.0041;
+    public static double angI = 0.00015;
+    public static double angD = 0.0004;
+    public static double angCos = 0.325;
+    public static double angExt = 0.000075;
     nematocyst slide;
     org.firstinspires.ftc.teamcode.subsystems.swerve.SwerveDrive SwerveDrive;
     Telemetry telemetry2;
