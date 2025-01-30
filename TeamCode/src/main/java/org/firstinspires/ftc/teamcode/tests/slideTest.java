@@ -14,7 +14,9 @@ public class slideTest extends OpMode {
     nematocyst slide;
     FtcDashboard dash;
     Telemetry t2;
-    public static double sP = 0.0012;
+    public boolean isRBPressed = false;
+    public boolean wasRBLastPressed;
+    public static double sP = 0.0015;
     public static double sI = 0.000;
     public static double sD = 0.00;
     public static double angP = 0.0041;
@@ -22,6 +24,16 @@ public class slideTest extends OpMode {
     public static double angD = 0.0004;
     public static double angCos = 0.325;
     public static double angExt = 0.000075;
+    public void buttonPressedRB() {
+        if (gamepad2.right_bumper && !isRBPressed) {
+            isRBPressed = true;
+            wasRBLastPressed = false;
+        }
+        if (!gamepad2.right_bumper && isRBPressed) {
+            isRBPressed = false;
+            wasRBLastPressed = true;
+        }
+    }
     @Override
     public void init() {
         slide = new nematocyst(this);
@@ -41,18 +53,21 @@ public class slideTest extends OpMode {
         } else if (gamepad2.y || gamepad2.triangle) {
             slide.goOut(36.0);
         } else if (gamepad2.right_trigger > 0.5) {
-            slide.goSpecimenDown(2);
+            slide.goSpecimenDown(24);
+        } else if (gamepad2.left_trigger > 0.5) {
+            slide.groundIn();
         }
 
+        buttonPressedRB();
+        if (wasRBLastPressed) {
+            slide.switchClaw();
+            wasRBLastPressed = false;
+        }
 
         if (gamepad2.dpad_down) {
             slide.wristIn();
         } else if (gamepad2.dpad_up) {
             slide.wristOut();
-        } else if (gamepad2.left_bumper) {
-            slide.grab();
-        } else if (gamepad2.right_bumper) {
-            slide.release();
         } else if (gamepad2.dpad_left) {
             slide.wristDown();
         } else if (gamepad2.dpad_right) {

@@ -43,7 +43,18 @@ public class teleOp extends OpMode {
             "bl_angle",
             "br_angle"
     };
-
+    public boolean isRBPressed = false;
+    public boolean wasRBLastPressed;
+    public void buttonPressedRB() {
+        if (gamepad2.right_bumper && !isRBPressed) {
+            isRBPressed = true;
+            wasRBLastPressed = false;
+        }
+        if (!gamepad2.right_bumper && isRBPressed) {
+            isRBPressed = false;
+            wasRBLastPressed = true;
+        }
+    }
     @Override
     public void init() {
         SwerveDrive = new SwerveDrive(
@@ -80,7 +91,25 @@ public class teleOp extends OpMode {
         } else if (gamepad2.y || gamepad2.triangle) {
             slide.goOut(36.0);
         } else if (gamepad2.right_trigger > 0.5) {
-            slide.goSpecimenDown(2);
+            slide.goSpecimenDown(24);
+        } else if (gamepad2.left_trigger > 0.5) {
+            slide.groundIn();
+        }
+
+        buttonPressedRB();
+        if (wasRBLastPressed) {
+            slide.switchClaw();
+            wasRBLastPressed = false;
+        }
+
+        if (gamepad2.dpad_down) {
+            slide.wristIn();
+        } else if (gamepad2.dpad_up) {
+            slide.wristOut();
+        } else if (gamepad2.dpad_left) {
+            slide.wristDown();
+        } else if (gamepad2.dpad_right) {
+            slide.wristSpecimen();
         }
 
         //TODO: Uncomment this last match
@@ -90,19 +119,6 @@ public class teleOp extends OpMode {
 //            slide.hangReal();
 //        }
 
-        if (gamepad2.dpad_down) {
-            slide.wristIn();
-        } else if (gamepad2.dpad_up) {
-            slide.wristOut();
-        } else if (gamepad2.left_bumper) {
-            slide.grab();
-        } else if (gamepad2.right_bumper) {
-            slide.release();
-        } else if (gamepad2.dpad_left) {
-            slide.wristDown();
-        } else if (gamepad2.dpad_right) {
-            slide.wristSpecimen();
-        }
         slide.loop(sP, sI, sD);
         slide.updatePID(angP, angI, angD, angCos, angExt);
         slide.updateSlidePID(sP, sI, sD);

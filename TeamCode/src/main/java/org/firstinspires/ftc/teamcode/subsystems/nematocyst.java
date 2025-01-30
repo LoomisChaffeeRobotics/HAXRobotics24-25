@@ -24,6 +24,7 @@ public class nematocyst {
     private static final double ticksPerInch = (double) 1425/(Math.PI * 3.75); // TODO: wtf???
     private static final double Max_Extension = 22 * ticksPerInch; // Horizontal Max Ticks
     private static final double degPerTick = (double) 360/1425;
+
     // PID constants
     public double sP = 0.0015;
     public double sI = 0.000;
@@ -46,6 +47,7 @@ public class nematocyst {
     private int maxSlidePos;
     private int maxPivotPos = -350;
     boolean isPullingDown = false;
+    boolean lastWasClosed = true;
     ElapsedTime pivotTimer;
     OpMode opMode;
     public nematocyst(OpMode OM) {
@@ -145,7 +147,7 @@ public class nematocyst {
 //        targPivotPos = (int) (-5 - (pivAng * 105/190));
 //        targetSlidePosition = (int) (targSlideHeight * ticksPerInch);
 //
-        targetSlidePosition = 4000;
+        targetSlidePosition = 6200;
         targPivotPos = -80;
         if (isTargAngDown) {
             justWasTargAngDown = true;
@@ -164,7 +166,7 @@ public class nematocyst {
 //        targPivotPos = (int) (-5 - (pivAng * 105/190));
 //        targetSlidePosition = (int) (targSlideHeight * ticksPerInch);
         targPivotPos = -80;
-        targetSlidePosition = 2000;
+        targetSlidePosition = 3800;
         if (isTargAngDown) {
             justWasTargAngDown = true;
         }
@@ -177,7 +179,7 @@ public class nematocyst {
 //        targPivotPos = (int) (-5 - (pivAng * 105/190));
 //        targetSlidePosition = (int) (targSlideHeight * ticksPerInch);
         targPivotPos = -80;
-        targetSlidePosition = 1400;
+        targetSlidePosition = 3000;
         if (isTargAngDown) {
             justWasTargAngDown = true;
         }
@@ -186,7 +188,24 @@ public class nematocyst {
     public void goGround(double inches) {
 
         targPivotPos = -355;
-        targetSlidePosition = 1500;
+        targetSlidePosition = 2000;
+        isTargAngDown = true;
+        if (isTargAngDown) {
+            justWasTargAngDown = false;
+        }
+        wristOut();
+    }
+    public void groundIn() {
+        targPivotPos = -355;
+        targetSlidePosition = 0;
+        isTargAngDown = true;
+        if (isTargAngDown) {
+            justWasTargAngDown = false;
+        }
+    }
+    public void groundOutTest() {
+        targPivotPos = -355;
+        targetSlidePosition = 3500;
         isTargAngDown = true;
         if (isTargAngDown) {
             justWasTargAngDown = false;
@@ -216,8 +235,15 @@ public class nematocyst {
     }
     public void manualUp() { targPivotPos++;}
     public void manualDown() { targPivotPos--;}
-    public void grab() { claw.setPosition(0.2); }
-    public void release() {claw.setPosition(0.7);}
+    public void switchClaw() {
+        if (lastWasClosed) {
+            release();
+        } else {
+            grab();
+        }
+    }
+    public void grab() { claw.setPosition(0.25); lastWasClosed = true; }
+    public void release() {claw.setPosition(0.7); lastWasClosed = false;}
     public void wristOut() {wrist.setPosition(.45);}
     public void wristIn() {wrist.setPosition(1);}
     public void wristDown() {wrist.setPosition(.825);}
