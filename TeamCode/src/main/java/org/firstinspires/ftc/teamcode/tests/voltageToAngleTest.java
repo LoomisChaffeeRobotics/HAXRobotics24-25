@@ -10,6 +10,7 @@ import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.util.ReadWriteFile;
 
 import org.firstinspires.ftc.robotcore.external.Telemetry;
+import org.firstinspires.ftc.teamcode.subsystems.swerve.voltageToAngleConstants;
 
 import java.io.File;
 
@@ -18,14 +19,21 @@ public class voltageToAngleTest extends OpMode {
     AnalogInput flEnc, frEnc, blEnc, brEnc;
     CRServo flAngle, frAngle, blAngle, brAngle;
     FtcDashboard dashboard;
+    String[] encoderNames = {
+            "fl_encoder",
+            "fr_encoder",
+            "bl_encoder",
+            "br_encoder"
+    };
     Telemetry telemetry2;
+    voltageToAngleConstants converter;
     @Override
     public void init() {
         flEnc = hardwareMap.get(AnalogInput.class, "fl_encoder");
         frEnc = hardwareMap.get(AnalogInput.class, "fr_encoder");
         blEnc = hardwareMap.get(AnalogInput.class, "bl_encoder");
         brEnc = hardwareMap.get(AnalogInput.class, "br_encoder");
-
+        converter = new voltageToAngleConstants(this, hardwareMap,encoderNames);
 //
 //        flAngle = hardwareMap.get(CRServo.class, "fl_angle");
 //        frAngle = hardwareMap.get(CRServo.class, "fr_angle");
@@ -36,18 +44,16 @@ public class voltageToAngleTest extends OpMode {
         dashboard = FtcDashboard.getInstance();
         telemetry2 = dashboard.getTelemetry();
     }
-
+    @Override
+    public void init_loop() {
+        converter.init_loop();
+    }
     @Override
     public void loop() {
 
-        telemetry.addData("flEnc", flEnc.getVoltage());
-        telemetry2.addData("flEnc", flEnc.getVoltage());
-        telemetry.addData("frEnc", frEnc.getVoltage());
-        telemetry2.addData("frEnc", frEnc.getVoltage());
-        telemetry.addData("blEnc", blEnc.getVoltage());
-        telemetry2.addData("blEnc", blEnc.getVoltage());
-        telemetry.addData("brEnc", brEnc.getVoltage());
-        telemetry2.addData("brEnc", brEnc.getVoltage());
+        converter.loop();
+        converter.getTelemetry(telemetry);
+        converter.getTelemetry(telemetry2);
 
         telemetry.update();
         telemetry2.update();

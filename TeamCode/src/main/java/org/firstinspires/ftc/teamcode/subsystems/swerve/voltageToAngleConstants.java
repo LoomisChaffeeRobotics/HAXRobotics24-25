@@ -45,6 +45,8 @@ public class voltageToAngleConstants {
     String lastLineValue = null;
     String fileDataRaw;
     public String[] writingFinal;
+    double tempAngFL, tempAngFR, tempAngBL, tempAngBR;
+    double degreesRawFL, degreesRawFR, degreesRawBL, degreesRawBR;
     OpMode opMode; // for telemetry when done reading
     public voltageToAngleConstants(OpMode opMode, HardwareMap hw, String[] encoderNames) {
         this.opMode = opMode;
@@ -139,14 +141,14 @@ public class voltageToAngleConstants {
     Map<Double,Double> br = new LinkedHashMap<Double, Double>() {{ // voltage up deg down (not side dependent)
         put(0.0, 55.0);
         put(0.092, 45.0);
-        put(0.505, 0.0);
-        put(0.506, 360.0);
+        put(0.46, 0.0);
+        put(0.461, 360.0);
         put(0.919, 315.0);
-        put(1.332, 270.0);
+        put(1.341, 270.0);
         put(1.745, 225.0);
-        put(2.159, 180.0);
+        put(2.136, 180.0);
         put(2.572, 135.0);
-        put(2.985, 90.0);
+        put(3.019, 90.0);
         put(3.307, 55.0);
     }};
     List<Map<Double, Double>> modulesTable = new ArrayList<Map<Double, Double>>() {{
@@ -175,6 +177,14 @@ public class voltageToAngleConstants {
         t.addData("lastSM", differenceMs[3]);
         t.addData("x1 class", x1class);
         t.addData("modules", modulesTable.size());
+        t.addData("BLtemp", degreesRawBL * smallToBigPulley);
+        t.addData("BRtemp", degreesRawBR * smallToBigPulley);
+        t.addData("FLtemp", degreesRawFL * smallToBigPulley);
+        t.addData("FRtemp", degreesRawFR * smallToBigPulley);
+        t.addData("blr", degreesRawBL);
+        t.addData("brr", degreesRawBR );
+        t.addData("flr", degreesRawFL);
+        t.addData("frr", degreesRawFR);
         t.update();
     }
     public void loop() {
@@ -253,54 +263,44 @@ public class voltageToAngleConstants {
         differenceMs[module] = difference;
         // these are never being active??
         if (Math.abs(difference) > 180) {
-//            if (module != 1) {
-                if (sm[module] < lastSm[module]) {
-                    rotations[module]++;
-                } else {
-                    rotations[module]--;
-                }
-//            } else {
-//                if (sm[module] < lastSm[module]) {
-//                    rotations[module]--;
-//                } else {
-//                    rotations[module]++;
-//                }
-//            }
+            if (sm[module] < lastSm[module]) {
+                rotations[module]++;
+            } else {
+                rotations[module]--;
+            }
         }
+        lastSm[module] = sm[module];
         // this updates the small pulley things
     }
     public void updateBigPulleyCalculator(int m) {
         switch (m) {
             case 0:
-                double degreesRawFL = sm[m] + (rotations[m] * 360) + offsets[0];
-                double tempAngFL = ((degreesRawFL * smallToBigPulley) ) % 360;
+                degreesRawFL = sm[m] + (rotations[m] * 360) + offsets[0];
+                tempAngFL = ((degreesRawFL * smallToBigPulley) ) % 360;
                 if (tempAngFL < 0) {
                     tempAngFL += 360;
                 }
                 angle[m] = tempAngFL;
                 break;
             case 1:
-                double frOffset = -130.5;
-                double degreesRawFR = sm[m] + (rotations[m] * 360) + offsets[1];
-                double tempAngFR = ((degreesRawFR * smallToBigPulley) ) % 360;
+                degreesRawFR = sm[m] + (rotations[m] * 360) + offsets[1];
+                tempAngFR = ((degreesRawFR * smallToBigPulley) ) % 360;
                 if (tempAngFR < 0) {
                     tempAngFR += 360;
                 }
                 angle[m] = tempAngFR;
                 break;
             case 2:
-                double blOffset = -113;
-                double degreesRawBL = sm[m] + (rotations[m] * 360) + offsets[2];
-                double tempAngBL= ((degreesRawBL * smallToBigPulley) )% 360;
+                degreesRawBL = sm[m] + (rotations[m] * 360) + offsets[2];
+                tempAngBL= ((degreesRawBL * smallToBigPulley) )% 360;
                 if (tempAngBL < 0) {
                     tempAngBL += 360;
                 }
                 angle[m] = tempAngBL;
                 break;
             case 3:
-                double brOffset = -345;
-                double degreesRawBR = sm[m] + (rotations[m] * 360) + offsets[3];
-                double tempAngBR = ((degreesRawBR * smallToBigPulley) ) % 360;
+                degreesRawBR = sm[m] + (rotations[m] * 360) + offsets[3];
+                tempAngBR = ((degreesRawBR * smallToBigPulley) ) % 360;
                 if (tempAngBR < 0) {
                     tempAngBR += 360;
                 }

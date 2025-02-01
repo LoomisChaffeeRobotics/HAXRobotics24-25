@@ -20,7 +20,8 @@ public class teleOp extends OpMode {
     public static double angI = 0.00015;
     public static double angD = 0.0004;
     public static double angCos = 0.325;
-    public static double angExt = 0.000075;
+    public static double angExt = 0.00006;
+    public boolean slowMode = false;
     nematocyst slide;
     org.firstinspires.ftc.teamcode.subsystems.swerve.SwerveDrive SwerveDrive;
     Telemetry telemetry2;
@@ -45,6 +46,8 @@ public class teleOp extends OpMode {
     };
     public boolean isRBPressed = false;
     public boolean wasRBLastPressed;
+    public boolean isYPressed = false;
+    public boolean wasYPressed;
     public void buttonPressedRB() {
         if (gamepad2.right_bumper && !isRBPressed) {
             isRBPressed = true;
@@ -53,6 +56,16 @@ public class teleOp extends OpMode {
         if (!gamepad2.right_bumper && isRBPressed) {
             isRBPressed = false;
             wasRBLastPressed = true;
+        }
+    }
+    public void buttonPressedY() {
+        if (gamepad1.y && !isRBPressed) {
+            isYPressed = true;
+            wasYPressed = false;
+        }
+        if (!gamepad1.y && isRBPressed) {
+            isYPressed = false;
+            wasYPressed = true;
         }
     }
     @Override
@@ -75,7 +88,6 @@ public class teleOp extends OpMode {
     public void loop() {
         double[] xAndY = fieldCentricXandY(
                 SwerveDrive.imu.getRobotYawPitchRollAngles().getYaw(), -gamepad1.left_stick_x, -gamepad1.left_stick_y);
-        SwerveDrive.loop(xAndY[0], xAndY[1], (gamepad2.right_stick_x + gamepad1.right_stick_x)/2);
         // trying to separate field centricity into the opmode level
 //        SwerveDrive.setPID(P, I, D);
         SwerveDrive.getTelemetry(telemetry2);
@@ -91,12 +103,32 @@ public class teleOp extends OpMode {
         } else if (gamepad2.y || gamepad2.triangle) {
             slide.goOut(36.0);
         } else if (gamepad2.right_trigger > 0.5) {
-            slide.goSpecimenDown(24);
+            slide.touchBar();
         } else if (gamepad2.left_trigger > 0.5) {
-            slide.groundIn();
+            slide.hangReal();
+        } else {
+            slide.activelyPullingDown = false;
         }
 
+        if (gamepad1.x) {
+            slide.getSpecimen();
+        }
+
+
         buttonPressedRB();
+//        buttonPressedY();
+//        if (wasYPressed) {
+//            if (slowMode) {
+//                slowMode = false;
+//            } else {
+//                slowMode = true;
+//            }
+//        }
+        if (slowMode) {
+            SwerveDrive.loop(.3 * xAndY[0], .3 * xAndY[1], (gamepad2.right_stick_x + gamepad1.right_stick_x)/4);
+        } else {
+            SwerveDrive.loop(xAndY[0], xAndY[1], (gamepad2.right_stick_x + gamepad1.right_stick_x)/2);
+        }
         if (wasRBLastPressed) {
             slide.switchClaw();
             wasRBLastPressed = false;
@@ -112,12 +144,6 @@ public class teleOp extends OpMode {
             slide.wristSpecimen();
         }
 
-        //TODO: Uncomment this last match
-//        if (gamepad2.start) {
-//            slide.hangSetup();
-//        } else if (gamepad2.back) {
-//            slide.hangReal();
-//        }
 
         slide.loop(sP, sI, sD);
         slide.updatePID(angP, angI, angD, angCos, angExt);

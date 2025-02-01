@@ -165,7 +165,7 @@ public class verySimpleAuto extends OpMode {
                 drive.loopFC(now.getHeading(), xPower, yPower, 0); // ignore the warning, is because of wpilib coord system
             case SCORE_SPECIMEN:
                 if (previousState != currentState) {
-                    n.goSpecimenDown(2);
+//                    n.goSpecimenDown(2);
                     previousState = STATES.SCORE_SPECIMEN;
                 } else if (n.isAtTargetHeight()) {
                     currentState = STATES.RELEASE_AND_PARK;

@@ -23,7 +23,7 @@ public class slideTest extends OpMode {
     public static double angI = 0.00015;
     public static double angD = 0.0004;
     public static double angCos = 0.325;
-    public static double angExt = 0.000075;
+    public static double angExt = 0.00005;
     public void buttonPressedRB() {
         if (gamepad2.right_bumper && !isRBPressed) {
             isRBPressed = true;
@@ -53,9 +53,11 @@ public class slideTest extends OpMode {
         } else if (gamepad2.y || gamepad2.triangle) {
             slide.goOut(36.0);
         } else if (gamepad2.right_trigger > 0.5) {
-            slide.goSpecimenDown(24);
+            slide.touchBar();
         } else if (gamepad2.left_trigger > 0.5) {
-            slide.groundIn();
+            slide.hangReal();
+        } else {
+            slide.activelyPullingDown = false;
         }
 
         buttonPressedRB();

@@ -83,7 +83,7 @@ public class teleOpResetEncoders extends OpMode {
         } else if (gamepad2.y || gamepad2.triangle) {
             slide.goOut(36.0);
         } else if (gamepad2.right_trigger > 0.5) {
-            slide.goSpecimenDown(2);
+//            slide.goSpecimenDown(2);
         }
 
         //TODO: Uncomment this last match
