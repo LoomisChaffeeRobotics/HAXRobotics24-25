@@ -151,7 +151,10 @@ public class teleOp extends OpMode {
         slide.getTelemetry();
         slide.getTelemetry(telemetry2);
     }
-
+    @Override
+    public void stop() {
+        SwerveDrive.stop();
+    }
     public double[] fieldCentricXandY(double theta, double x, double y) {
         double theta2 = Math.toRadians(theta);
         double fieldX = x * Math.cos(theta2) - y * Math.sin(theta2);

@@ -9,7 +9,10 @@ import org.apache.commons.lang3.ArrayUtils;
 import org.firstinspires.ftc.robotcore.external.Telemetry;
 import org.firstinspires.ftc.teamcode.subsystems.swerve.voltageToAngleConstants;
 
+import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.Arrays;
 
 @TeleOp
@@ -24,9 +27,9 @@ public class resetStorage extends OpMode {
             "bl_encoder",
             "br_encoder"
     };
-    String[] writingFinal;
     String[] smallAngles;
     double[] offsetsNegative;
+    String finalString;
     String[] offsetsString;
     String[] zeroes = {
             "360.0",
@@ -60,11 +63,26 @@ public class resetStorage extends OpMode {
             offsetsNegative[i] = -1 * (angles.sm[i]);
             offsetsString[i] = Double.toString(offsetsNegative[i]);
         }
-        writingFinal = ArrayUtils.addAll(zeroes, smallAngles);
-        writingFinal = ArrayUtils.addAll(writingFinal, offsetsString); // small angles again is the offsets that get added
+        StringBuilder sb = new StringBuilder();
+        for (String s:zeroes) {
+            sb.append(s).append(",");
+        }
+        for (String s:smallAngles) {
+            sb.append(s).append(",");
+        }
+        for (String s:offsetsString) {
+            sb.append(s).append(",");
+        }
+        finalString = sb.toString();
+//        writingFinal = ArrayUtils.addAll(zeroes, smallAngles);
+//        writingFinal = ArrayUtils.addAll(writingFinal, offsetsString); // small angles again is the offsets that get added
     }
     @Override
     public void loop() {
-        ReadWriteFile.writeFile(filePath, Arrays.toString(writingFinal));
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(filePath))) {
+            writer.write(finalString);
+        } catch (IOException e) {
+            telemetry.addData("Error", "Failed to write to file: " + e.getMessage());
+        }
     }
 }

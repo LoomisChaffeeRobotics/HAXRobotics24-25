@@ -71,4 +71,8 @@ public class driveTest extends OpMode {
 
         return new double[]{fieldX, fieldY};
     }
+    @Override
+    public void stop() {
+        SwerveDrive.stop();
+    }
 }

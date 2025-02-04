@@ -58,4 +58,8 @@ public class voltageToAngleTest extends OpMode {
         telemetry.update();
         telemetry2.update();
     }
+    @Override
+    public void stop() {
+        converter.stopAndLog();
+    }
 }
