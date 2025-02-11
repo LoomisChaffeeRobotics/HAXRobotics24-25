@@ -28,7 +28,6 @@ import com.qualcomm.robotcore.hardware.IMU;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
 import org.firstinspires.ftc.robotcore.external.Telemetry;
-import org.firstinspires.ftc.teamcode.drive.SampleMecanumDrive;
 import org.firstinspires.ftc.teamcode.subsystems.SlewRateLimiter;
 
 import java.util.ArrayList;
@@ -40,7 +39,7 @@ public class SwerveDrive {
     public TrajectoryVelocityConstraint velocityConstraint = new MinVelocityConstraint(Arrays.asList(
             new AngularVelocityConstraint(Math.toRadians(180)),
             new MecanumVelocityConstraint(20, 11)
-    ));
+    )); // i made this up
     public TrajectoryAccelerationConstraint accelerationConstraint = new ProfileAccelerationConstraint(15);
     public double maxAngAccel = Math.PI;
     public double maxAngVel = Math.PI;
@@ -54,7 +53,6 @@ public class SwerveDrive {
     boolean dontMove;
     boolean reverse;
     public SwerveDriveOdometry odo;
-    public static SampleMecanumDrive fakeDrive;
     public ElapsedTime timer;
     public SwerveModuleState[] states = new SwerveModuleState[4];
     SwerveDriveKinematics kinematics; // FTCLIB FOR AUTO
@@ -120,9 +118,6 @@ public class SwerveDrive {
                 new Translation2d((-4.5), (5.5)),
                 new Translation2d((-4.5), (-5.5)));
         odo = new SwerveDriveOdometry(kinematics, new Rotation2d(imu.getRobotYawPitchRollAngles().getYaw()), new Pose2d(startFTCLibX, startFTCLibY, new Rotation2d(startHeadingRads)));
-        fakeDrive = new SampleMecanumDrive(opmode.hardwareMap);
-
-
 
         timer = new ElapsedTime();
         nowPose = new Pose2d();
