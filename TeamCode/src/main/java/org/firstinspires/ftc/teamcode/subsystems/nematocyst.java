@@ -27,10 +27,10 @@ public class nematocyst {
 
     // PID constants
     public double sP = 0.0015;
-    public double sI = 0.000;
+    public double sI = 0.0001;
     public double sD = 0.00;
-    public double pP = 0.0041;
-    public double pI = 0.00015;
+    public double pP = 0.0044;
+    public double pI = 0.0002;
     public double pD = 0.0004;
     public double pCos = 0.325;
     public double pExt = 0.00006;

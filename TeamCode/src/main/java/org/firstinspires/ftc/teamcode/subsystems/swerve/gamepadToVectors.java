@@ -19,11 +19,7 @@ public class gamepadToVectors {
 
     public double[] getTranslationVector(double translateX, double translateY) {
         double[] translationVector = {translateX, translateY};
-        return limitVector(translationVector, maxTranslationSpeed);
-    }
-
-    public double getRotationSpeed(double rotationX) {
-        return rotationX * maxRotationSpeed; // ask emma about gamepad
+        return limitVector(translationVector, 1);
     }
     public double[] fieldCentrifyVector(double theta, double rx, double[] targetVector, Wheel wheel) {
         double x = targetVector[0];
@@ -57,15 +53,29 @@ public class gamepadToVectors {
     }
     public double[] getCombinedVector (double x, double y,double rx, Wheel wheel) {
             double[] translationVector = getTranslationVector(x, y);
+            // <= unit vector in translation
 //            double[] fcVector = fieldCentrifyVector(theta, rx, translationVector, wheel);
 
 
-            double rotationSpeed = getRotationSpeed(rx);
+            double rotationSpeed = rx;
+            // needs to be <= unit vector of rotation
 
-            double[] combinedVector = {
-                    translationVector[0] + rotationSpeed*Math.sin(getWheelAngle(wheel)),
-                    translationVector[1] + rotationSpeed*Math.cos(getWheelAngle(wheel)),
-            };
+            double[] combinedVector;
+            if (translationVector[0] == 0 && translationVector[1] == 0) {
+                combinedVector = new double[]{
+                        translationVector[0] + 1.5 * rotationSpeed * Math.sin(getWheelAngle(wheel)),
+                        translationVector[1] + 1.5 * rotationSpeed * Math.cos(getWheelAngle(wheel)),
+                };
+            } else {
+                 combinedVector = new double[]{
+                        translationVector[0] + 1.25 *rotationSpeed*Math.sin(getWheelAngle(wheel)),
+                        translationVector[1] + 1.25 *rotationSpeed*Math.cos(getWheelAngle(wheel)),
+                };
+            }
+
+
+
+
 
             // public static variables for Length and Width
             //some way to tell which wheel is being talked about

@@ -30,21 +30,21 @@ public class specimenOnly extends OpMode {
     nematocyst n;
     FtcDashboard dash;
     Telemetry t2;
-    public static double tP = .3;
-    public static double tI = 0;
+    public static double tP = .095;
+    public static double tI = 0.0001;
     public static double tD = 0.0001;
-    public static double rP = .075;
+    public static double rP = .05;
     public static double rI = 0;
     public static double rD = 0;
-    double rotPower;
-    double xPower;
-    double yPower;
+    double rotPower = 0;
+    double xPower = 0;
+    double yPower = 0;
 //    TrajectorySequence trajSequence;
     PIDController txPID;
     PIDController tyPID;
     PIDController rotPID;
-    Pose2d now;
-    Pose2d trajPose;
+    Pose2d now = new Pose2d(new Translation2d(0,0), new Rotation2d(0));
+    Pose2d trajPose = new Pose2d(new Translation2d(0,0), new Rotation2d(0));
 //    TrajectorySequenceBuilder builder;
     ElapsedTime trajTimer;
     public enum STATES {
@@ -79,6 +79,7 @@ public class specimenOnly extends OpMode {
     };
     ElapsedTime pullWaiter;
     Trajectory traj1;
+    ElapsedTime pauseBegin;
     public Pose2d rotateFTCLibPose(com.arcrobotics.ftclib.geometry.Pose2d odoPose) {
         Pose2d tempPose = new Pose2d(odoPose.getY()*-1,odoPose.getX(), new Rotation2d(odoPose.getHeading()+Math.PI/2));
         return tempPose;
@@ -86,18 +87,18 @@ public class specimenOnly extends OpMode {
     @Override
     public void init() {
         List<Translation2d> tlist = new ArrayList<>();
-        TrajectoryConfig traj1Config = new TrajectoryConfig(18, 18);
+        TrajectoryConfig traj1Config = new TrajectoryConfig(24, 24);
         traj1 = TrajectoryGenerator.generateTrajectory(
-                new Pose2d(new Translation2d(0,0), new Rotation2d(0)),
+                new Pose2d(new Translation2d(0,0), new Rotation2d(Math.PI)),
                 tlist,
-                new Pose2d(new Translation2d(18,0), new Rotation2d(0)),
+                new Pose2d(new Translation2d(12,0), new Rotation2d(Math.PI)), // idk why, but backwards is positive
                 traj1Config
         );
 
         drive = new SwerveDrive(
                 11, 11, 18, 18,
                 this, gamepad1, hardwareMap,
-                encoderNames, driveNames, angleNames, 0, 0, 0);
+                encoderNames, driveNames, angleNames, 0, 0, Math.PI);
 //        builder = new TrajectorySequenceBuilder(new Pose2d(12, -66, Math.PI/2),
 //                drive.velocityConstraint, drive.accelerationConstraint,
 //                drive.maxAngVel, drive.maxAngAccel); // TODO: Maybe bad radians/degrees
@@ -136,26 +137,36 @@ public class specimenOnly extends OpMode {
     }
     @Override
     public void start() {
-        currentState = STATES.FORWARD;
-        trajTimer.reset();
+        pauseBegin = new ElapsedTime();
+        pauseBegin.reset();
     }
     @Override
     public void loop() {
         switch (currentState) {
+            // TODO: DON'T FORGET YOUR BREAK STATEMENTS
+            case START:
+                if (pauseBegin.seconds() > 5) {
+                    currentState = STATES.FORWARD;
+                }
+                break;
             case FORWARD:
                 if (currentState != previousState) {
                     trajTimer.reset();
                     previousState = STATES.FORWARD;
-                } else if (now.getX() > 17) {
+                } else if (Math.abs(now.getX() - trajPose.getX()) < 1) {
                     currentState = STATES.ARM_UP;
                     drive.loop(0,0,0);
+                    xPower = 0;
+                    yPower = 0;
+                    rotPower = 0;
                 }
-                trajPose = traj1.sample(trajTimer.seconds()).poseMeters;
+                trajPose = new Pose2d(new Translation2d(24, 0), new Rotation2d(0));
                 now = (drive.nowPose);
                 rotPower = -rotPID.calculate(now.getHeading(), trajPose.getHeading());
-                xPower = -txPID.calculate(now.getX(), trajPose.getX());
-                yPower = -tyPID.calculate(now.getY(), trajPose.getY());
+                xPower =  txPID.calculate(now.getX(), trajPose.getX());
+                yPower = tyPID.calculate(now.getY(), trajPose.getY());
                 drive.loop(yPower, xPower, rotPower);
+                break;
             case ARM_UP:
                 if (currentState != previousState) {
                     n.goSpecimen(2);
@@ -165,6 +176,7 @@ public class specimenOnly extends OpMode {
                     currentState = STATES.PULL;
                 }
                 n.loop();
+                drive.loop(0,0,0);
                 break;
             case PULL:
                 if (currentState != previousState) {
@@ -173,6 +185,8 @@ public class specimenOnly extends OpMode {
                 } else if (pullWaiter.seconds() > 5) {
                     currentState = STATES.RELEASE;
                 }
+                drive.loop(0,0,0);
+                break;
             case RELEASE:
                 n.release();
                 currentState = STATES.PARK;
@@ -186,6 +200,7 @@ public class specimenOnly extends OpMode {
 //                } else if ((timer.seconds() > 2)) {
                     currentState = STATES.DONE;
 //                }
+                drive.loop(0,0,0);
                 break;
             case DONE:
                 break;
@@ -199,6 +214,9 @@ public class specimenOnly extends OpMode {
         t2.addData("nowX", now.getX());
         t2.addData("nowY", now.getY());
         t2.addData("nowH", now.getHeading());
+        t2.addData("xPower", xPower);
+        t2.addData("yPower", yPower);
+        t2.addData("trajtimer", trajTimer.seconds());
         t2.update();
     }
     @Override

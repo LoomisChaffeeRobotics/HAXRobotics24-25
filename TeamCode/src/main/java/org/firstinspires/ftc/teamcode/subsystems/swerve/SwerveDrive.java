@@ -123,12 +123,7 @@ public class SwerveDrive {
         nowPose = new Pose2d();
 
         for (int i = 0; i < driveMotors.length; i++) {
-            if (Math.signum(driveSpeeds[i]) == -1) {
-                states[i] = new SwerveModuleState(-1 * driveSpeeds[i], new Rotation2d(Math.toRadians((angles[i] + 180) % 360)));
-            } else {
                 states[i] = new SwerveModuleState(driveSpeeds[i], new Rotation2d(Math.toRadians(angles[i])));
-            }
-
         }
         // init the other devices
 
@@ -210,7 +205,7 @@ public class SwerveDrive {
             double magnitude = targetADPairList.get(i).first; // can be + or -
             double speedOutput;
             // possibly: check if positive or negative, if newly positive or negative, use a diff limiter
-            if (magnitude != 0) {
+            if (Math.abs(magnitude) < 0.05) {
                 wheelLimiters[i].updateRateLimit(1/((2.53 * (Math.abs(angles[i]-targetADPairList.get(i).second))/90)+0.00000000000000001));
                 speedOutput = wheelLimiters[i].calculate(magnitude);
             } else {
