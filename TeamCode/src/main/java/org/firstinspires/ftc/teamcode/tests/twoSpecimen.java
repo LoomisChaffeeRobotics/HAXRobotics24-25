@@ -5,16 +5,23 @@ import com.arcrobotics.ftclib.controller.PIDController;
 import com.arcrobotics.ftclib.geometry.Pose2d;
 import com.arcrobotics.ftclib.geometry.Rotation2d;
 import com.arcrobotics.ftclib.geometry.Translation2d;
+import com.arcrobotics.ftclib.trajectory.Trajectory;
+import com.arcrobotics.ftclib.trajectory.TrajectoryConfig;
+import com.arcrobotics.ftclib.trajectory.TrajectoryGenerator;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
 import org.firstinspires.ftc.robotcore.external.Telemetry;
+import org.firstinspires.ftc.teamcode.R;
 import org.firstinspires.ftc.teamcode.subsystems.nematocyst;
 import org.firstinspires.ftc.teamcode.subsystems.swerve.SwerveDrive;
 
+import java.util.ArrayList;
+import java.util.List;
+
 @Autonomous
-public class specimenOnly extends OpMode {
+public class twoSpecimen extends OpMode {
     SwerveDrive drive;
     nematocyst n;
     FtcDashboard dash;
@@ -28,14 +35,19 @@ public class specimenOnly extends OpMode {
     double rotPower = 0;
     double xPower = 0;
     double yPower = 0;
+//    TrajectorySequence trajSequence;
     PIDController txPID;
     PIDController tyPID;
     PIDController rotPID;
     Pose2d now = new Pose2d(new Translation2d(0,0), new Rotation2d(0));
     Pose2d trajPose = new Pose2d(new Translation2d(0,0), new Rotation2d(0));
+//    TrajectorySequenceBuilder builder;
     ElapsedTime trajTimer;
     ElapsedTime tempBrokenArmTimer;
     Pose2d trajPose2;
+    private Pose2d trajPoseGrab;
+    ElapsedTime grab2Timer;
+    private Pose2d trajPoseGoBack;
 
     public enum STATES {
         START,
@@ -43,11 +55,19 @@ public class specimenOnly extends OpMode {
         ARM_UP,
         PULL,
         RELEASE,
+        DRIVEWALL,
+        ARMDOWN,
+        GRAB2,
+        GOBACK,
+        ARMUP2,
+        PULL2,
+        RELEASE2,
         PARK,
         DONE
     }
     STATES currentState = STATES.START;
     STATES previousState = STATES.START;
+    ElapsedTime timer;
     String[] encoderNames = {
             "fl_encoder",
             "fr_encoder",
@@ -67,14 +87,33 @@ public class specimenOnly extends OpMode {
             "br_angle"
     };
     ElapsedTime pullWaiter;
+    Trajectory traj1;
     ElapsedTime pauseBegin;
+    public Pose2d rotateFTCLibPose(Pose2d odoPose) {
+        Pose2d tempPose = new Pose2d(odoPose.getY()*-1,odoPose.getX(), new Rotation2d(odoPose.getHeading()+Math.PI/2));
+        return tempPose;
+    }
     @Override
     public void init() {
+        List<Translation2d> tlist = new ArrayList<>();
+        TrajectoryConfig traj1Config = new TrajectoryConfig(24, 24);
+        traj1 = TrajectoryGenerator.generateTrajectory(
+                new Pose2d(new Translation2d(0,0), new Rotation2d(Math.PI)),
+                tlist,
+                new Pose2d(new Translation2d(12,0), new Rotation2d(Math.PI)), // idk why, but backwards is positive
+                traj1Config
+        );
 
         drive = new SwerveDrive(
                 11, 11, 18, 18,
                 this, gamepad1, hardwareMap,
                 encoderNames, driveNames, angleNames, 0, 0, Math.PI);
+//        builder = new TrajectorySequenceBuilder(new Pose2d(12, -66, Math.PI/2),
+//                drive.velocityConstraint, drive.accelerationConstraint,
+//                drive.maxAngVel, drive.maxAngAccel); // TODO: Maybe bad radians/degrees
+//        trajSequence = builder
+//                .forward(18)
+//                .build();
 
         n = new nematocyst(this);
         n.init("pivot", "slide", "wrist", "claw");
@@ -87,7 +126,22 @@ public class specimenOnly extends OpMode {
         now = drive.nowPose;
         pullWaiter = new ElapsedTime();
         tempBrokenArmTimer = new ElapsedTime();
+        grab2Timer = new ElapsedTime();
     }
+//    public Pose2d getPoseAtTime(TrajectorySequence trajectorySequence, double time) {
+//        double accumulatedTime = 0.0;
+//        for (int i = 0; i < trajectorySequence.size(); i++) {
+//            TrajectorySegment segment = (TrajectorySegment) trajectorySequence.get(i);
+//            double segmentDuration = segment.getDuration();
+//            if (accumulatedTime + segmentDuration >= time) {
+//                double timeInSegment = time - accumulatedTime;
+//                return segment.getPoseAtTime(timeInSegment);
+//            }
+//            accumulatedTime += segmentDuration;
+//        }
+//        // If the time exceeds the total duration, return the end pose
+//        return trajectorySequence.end();
+//    }
     @Override
     public void init_loop () {
         drive.init_loop();
@@ -150,13 +204,94 @@ public class specimenOnly extends OpMode {
                 drive.loop(0,0,0);
                 break;
             case RELEASE:
+                drive.loop(0,0,0);
                 n.release();
-                n.goUp(0);
+                currentState = STATES.ARMDOWN;
+                break;
+            case DRIVEWALL:
+                if (currentState != previousState) {
+                    trajPoseGrab = new Pose2d(new Translation2d(6, -26), new Rotation2d(Math.PI));
+                    previousState = STATES.DRIVEWALL;
+                } else if (Math.abs(trajPoseGrab.getX() - now.getX()) < 1 & Math.abs(trajPoseGrab.getY() - now.getY()) < 1 & Math.abs(trajPoseGrab.getHeading() - now.getHeading()) < .4) {
+                    drive.loop(0,0,0);
+                    xPower = 0;
+                    yPower = 0;
+                    rotPower = 0;
+                    currentState = STATES.ARMDOWN;
+                }
+                now = (drive.nowPose);
+                rotPower = rotPID.calculate(now.getHeading(), trajPoseGrab.getHeading());
+                xPower =  txPID.calculate(now.getX(), trajPoseGrab.getX());
+                yPower = tyPID.calculate(now.getY(), trajPoseGrab.getY());
+                drive.loop(yPower, xPower, rotPower);
+                break;
+            case ARMDOWN:
+                if (currentState != previousState) {
+                    previousState = STATES.ARMDOWN;
+                    n.getSpecimen();
+                } else if (n.isAtTargetHeight() && n.isAtTargAng()) {
+                    currentState = STATES.GRAB2;
+                }
+                n.loop();
+                drive.loop(0,0,0);
+                break;
+            case GRAB2:
+                if (currentState != previousState) {
+                    previousState = STATES.GRAB2;
+                    grab2Timer.reset();
+                    n.grab();
+                } else if (grab2Timer.seconds() > 0.5) {
+                    currentState = STATES.GOBACK;
+                }
+                drive.loop(0,0,0);
+                break;
+            case GOBACK:
+                if (currentState != previousState) {
+                    previousState = STATES.GOBACK;
+                    n.goUp(0);
+                    trajPoseGoBack = new Pose2d(new Translation2d(12, 0), new Rotation2d(0));
+                } else if (Math.abs(now.getX() - trajPoseGoBack.getX()) < 1 & Math.abs(now.getY() - trajPoseGoBack.getY()) < 1 & Math.abs(now.getHeading() - trajPoseGoBack.getHeading()) < .4) {
+                    drive.loop(0,0,0);
+                    xPower = 0;
+                    yPower = 0;
+                    rotPower = 0;
+                    currentState = STATES.ARMUP2;
+                }
+                now = (drive.nowPose);
+                rotPower = rotPID.calculate(now.getHeading(), trajPoseGoBack.getHeading());
+                xPower =  txPID.calculate(now.getX(), trajPoseGoBack.getX());
+                yPower = tyPID.calculate(now.getY(), trajPoseGoBack.getY());
+                drive.loop(yPower, xPower, rotPower);
+                break;
+            case ARMUP2:
+                if (currentState != previousState) {
+                    previousState = STATES.ARMUP2;
+                    n.goSpecimen(23);
+                    n.wristOut();
+                } else if (n.isAtTargAng() & n.isAtTargetHeight()) {
+                    currentState = STATES.PULL2;
+                }
+                drive.loop(0,0,0);
+                break;
+            case PULL2:
+                if (currentState != previousState) {
+                    n.wristIn();
+                    pullWaiter.reset();
+                    previousState = STATES.PULL2;
+                } else if (pullWaiter.seconds() > 2) {
+                    currentState = STATES.RELEASE2;
+                }
+                drive.loop(0,0,0);
+                break;
+            case RELEASE2:
+                n.release();
+                drive.loop(0,0,0);
                 currentState = STATES.PARK;
                 break;
             case PARK:
                 if (currentState != previousState) {
                     previousState = STATES.PARK;
+                    n.goUp(0);
                     trajPose2 = new Pose2d(new Translation2d(0, -26), new Rotation2d(0));
                 } else if (Math.abs(now.getX() - trajPose2.getX()) < 1 & Math.abs(now.getY() - trajPose2.getY()) < 1) {
                     drive.loop(0,0,0);
@@ -171,7 +306,7 @@ public class specimenOnly extends OpMode {
                 yPower = tyPID.calculate(now.getY(), trajPose2.getY());
                 drive.loop(yPower, xPower, rotPower);
                 break;
-            case DONE: 
+            case DONE:
                 drive.loop(0,0,0);
                 break;
         }

@@ -47,7 +47,7 @@ public class slideTest extends OpMode {
         if (gamepad2.a || gamepad2.cross) {
             slide.goUp(0);
         } else if (gamepad2.x || gamepad2.square) {
-            slide.goGround(13.0);
+            slide.groundIn();
         } else if (gamepad2.b || gamepad2.circle) {
             slide.goSpecimen(28);
         } else if (gamepad2.y || gamepad2.triangle) {
@@ -58,6 +58,9 @@ public class slideTest extends OpMode {
             slide.hangReal();
         } else {
             slide.activelyPullingDown = false;
+        }
+        if (gamepad2.left_bumper) {
+            slide.groundOutTest();
         }
 
         buttonPressedRB();

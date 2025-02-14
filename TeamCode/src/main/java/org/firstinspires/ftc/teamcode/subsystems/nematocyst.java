@@ -27,7 +27,7 @@ public class nematocyst {
 
     // PID constants
     public double sP = 0.0015;
-    public double sI = 0.0001;
+    public double sI = 0.0005;
     public double sD = 0.00;
     public double pP = 0.0044;
     public double pI = 0.0002;
@@ -50,6 +50,7 @@ public class nematocyst {
     boolean lastWasClosed = true;
     ElapsedTime pivotTimer;
     public boolean activelyPullingDown = false;
+    SlewRateLimiter outLimiter;
     OpMode opMode;
     public nematocyst(OpMode OM) {
         opMode = OM;
@@ -74,6 +75,7 @@ public class nematocyst {
         slidePID = new PIDController(sP, sI, sD);
         grab();
         wristIn();
+        outLimiter = new SlewRateLimiter(875, -100000000,0);
     }
 
     public void loop(double P, double I, double D) {
@@ -99,9 +101,9 @@ public class nematocyst {
         if (activelyPullingDown) {
             out = -1;
         }
-//        SlewRateLimiter slideLimiter = new SlewRateLimiter(0.5); //TODO: Tune this
         slidePID.setPIDF(P, I, D,0);
-        slideMotor.setPower(out);
+        double slidePower = outLimiter.calculate(out);
+        slideMotor.setPower(slidePower);
         pivot.setPower(pivotPower); // use updatdePID to fix this
     }
     public void loop() {
@@ -190,7 +192,7 @@ public class nematocyst {
     }
     public void getSpecimen() {
         targPivotPos = -300;
-        targetSlidePosition = 500;
+        targetSlidePosition = 250;
         if (isTargAngDown) {
             justWasTargAngDown = false;
         }
@@ -198,24 +200,24 @@ public class nematocyst {
         wristOut();
         isPullingDown = false;
     }
-//    public void groundIn() {
-//        targPivotPos = -355;
-//        targetSlidePosition = 0;
-//        isTargAngDown = true;
-//        if (isTargAngDown) {
-//            justWasTargAngDown = false;
-//        }
-//        isPullingDown = false;
-//    }
-//    public void groundOutTest() {
-//        targPivotPos = -355;
-//        targetSlidePosition = 3500;
-//        isTargAngDown = true;
-//        if (isTargAngDown) {
-//            justWasTargAngDown = false;
-//        }
-//        wristOut();
-//    }
+    public void groundIn() {
+        targPivotPos = -355;
+        targetSlidePosition = 0;
+        isTargAngDown = true;
+        if (isTargAngDown) {
+            justWasTargAngDown = false;
+        }
+        isPullingDown = false;
+    }
+    public void groundOutTest() {
+        targPivotPos = -355;
+        targetSlidePosition = 3500;
+        isTargAngDown = true;
+        if (isTargAngDown) {
+            justWasTargAngDown = false;
+        }
+        wristOut();
+    }
     public boolean isAtTargetHeight() {
         if (Math.abs(slideMotor.getCurrentPosition()/ticksPerInch - targSlideHeight) < 2) {
             return true;
