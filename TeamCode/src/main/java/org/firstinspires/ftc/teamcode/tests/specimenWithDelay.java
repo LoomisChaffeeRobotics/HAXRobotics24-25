@@ -14,7 +14,7 @@ import org.firstinspires.ftc.teamcode.subsystems.nematocyst;
 import org.firstinspires.ftc.teamcode.subsystems.swerve.SwerveDrive;
 
 @Autonomous
-public class specimenOnly extends OpMode {
+public class specimenWithDelay extends OpMode {
     SwerveDrive drive;
     nematocyst n;
     FtcDashboard dash;
@@ -104,13 +104,13 @@ public class specimenOnly extends OpMode {
         switch (currentState) {
             // TODO: DON'T FORGET YOUR BREAK STATEMENTS
             case START:
-                if (pauseBegin.seconds() > 1) {
+                if (pauseBegin.seconds() > 10) {
                     currentState = STATES.FORWARD;
                 }
                 break;
             case FORWARD:
                 if (currentState != previousState) {
-                    trajPose = new Pose2d(new Translation2d(16.5, 0), new Rotation2d(0));
+                    trajPose = new Pose2d(new Translation2d(17, 0), new Rotation2d(0));
                     trajTimer.reset();
                     previousState = STATES.FORWARD;
                 } else if (Math.abs(now.getX() - trajPose.getX()) < 1) {
@@ -152,7 +152,7 @@ public class specimenOnly extends OpMode {
                 break;
             case BACK:
                 if (currentState != previousState) {
-                    trajPoseB = new Pose2d(new Translation2d(14.5, 0), new Rotation2d(0));
+                    trajPoseB = new Pose2d(new Translation2d(15, 0), new Rotation2d(0));
                     previousState = STATES.BACK;
                 } else if (Math.abs(now.getX() - trajPoseB.getX()) < 1) {
                     drive.loop(0,0,0);
@@ -171,7 +171,9 @@ public class specimenOnly extends OpMode {
                 n.release();
                 n.goUp(0);
                 drive.loop(0,0,0);
-                currentState = STATES.PARK;
+                if (pauseBegin.seconds() > 23) {
+                    currentState = STATES.PARK;
+                }
                 break;
             case PARK:
                 if (currentState != previousState) {

@@ -219,6 +219,13 @@ public class voltageToAngleConstants {
             opMode.telemetry.addData("Error", "Failed to write to file: " + e.getMessage());
         }
     }
+    public void reset() {
+        for (int i = 0; i < sm.length; i++) {
+            angle[i] = 360;
+            rotations[i] = 0;
+            offsets[i] = -sm[i];
+        }
+    }
     @NonNull
     private StringBuilder getStringBuilder() {
         StringBuilder sb = new StringBuilder();

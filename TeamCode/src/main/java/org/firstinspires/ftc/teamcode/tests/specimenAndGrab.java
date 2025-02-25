@@ -13,7 +13,6 @@ import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
 import org.firstinspires.ftc.robotcore.external.Telemetry;
-import org.firstinspires.ftc.teamcode.R;
 import org.firstinspires.ftc.teamcode.subsystems.nematocyst;
 import org.firstinspires.ftc.teamcode.subsystems.swerve.HeadingPIDController;
 import org.firstinspires.ftc.teamcode.subsystems.swerve.SwerveDrive;
@@ -22,7 +21,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Autonomous
-public class twoSpecimen extends OpMode {
+public class specimenAndGrab extends OpMode {
     SwerveDrive drive;
     nematocyst n;
     FtcDashboard dash;
@@ -73,15 +72,13 @@ public class twoSpecimen extends OpMode {
         PULLSPECIMEN,
         GOBACK,
         ARMUP2,
-        PULL2,
-        BACK2,
-        RELEASE2,
         PARK,
         DONE
     }
     STATES currentState = STATES.START;
     STATES previousState = STATES.START;
     ElapsedTime walltimer;
+    ElapsedTime outTimer;
     String[] encoderNames = {
             "fl_encoder",
             "fr_encoder",
@@ -143,6 +140,7 @@ public class twoSpecimen extends OpMode {
         tempBrokenArmTimer = new ElapsedTime();
         grab2Timer = new ElapsedTime();
         walltimer = new ElapsedTime();
+        outTimer = new ElapsedTime();
     }
 //    public Pose2d getPoseAtTime(TrajectorySequence trajectorySequence, double time) {
 //        double accumulatedTime = 0.0;
@@ -178,7 +176,7 @@ public class twoSpecimen extends OpMode {
                 break;
             case FORWARD:
                 if (currentState != previousState) {
-                    trajPose = new Pose2d(new Translation2d(17, 0), new Rotation2d(Math.PI));
+                    trajPose = new Pose2d(new Translation2d(16.5, 0), new Rotation2d(Math.PI));
                     trajTimer.reset();
                     previousState = STATES.FORWARD;
                 } else if (Math.abs(now.getX() - trajPose.getX()) < 1) {
@@ -220,7 +218,7 @@ public class twoSpecimen extends OpMode {
                 break;
             case BACK1:
                 if (currentState != previousState) {
-                    trajPoseB = new Pose2d(new Translation2d(15, 0), new Rotation2d(Math.PI));
+                    trajPoseB = new Pose2d(new Translation2d(14.5, 0), new Rotation2d(Math.PI));
                     previousState = STATES.BACK1;
                 } else if (Math.abs(now.getX() - trajPoseB.getX()) < 1) {
                     drive.loopFC(drive.imu.getRobotYawPitchRollAngles().getYaw(), 0,0,0);
@@ -245,12 +243,16 @@ public class twoSpecimen extends OpMode {
                 if (currentState != previousState) {
                     trajPoseGrab = new Pose2d(new Translation2d(8, -36), new Rotation2d(0));
                     previousState = STATES.DRIVEWALL;
+                    outTimer.reset();
                 } else if (Math.abs(trajPoseGrab.getX() - now.getX()) < 1 & Math.abs(trajPoseGrab.getY() - now.getY()) < 1) {
                     drive.loopFC(drive.imu.getRobotYawPitchRollAngles().getYaw(), 0,0,0);
                     xPower = 0;
                     yPower = 0;
                     rotPower = 0;
                     currentState = STATES.APPROACHWALL;
+                }
+                if (outTimer.seconds() > 1.5) {
+                    n.getSpecimen();
                 }
                 now = (drive.nowPose);
                 rotPower = rSmPID.calculate(now.getHeading(), trajPoseGrab.getHeading());
@@ -275,7 +277,7 @@ public class twoSpecimen extends OpMode {
                 break;
             case APPROACHWALL:
                 if (currentState != previousState) {
-                    trajPoseGrab = new Pose2d(new Translation2d(3, -36), new Rotation2d(0));
+                    trajPoseGrab = new Pose2d(new Translation2d(2.5, -36), new Rotation2d(0));
                     previousState = STATES.APPROACHWALL;
                 } else if (Math.abs(trajPoseGrab.getX() - now.getX()) < 1 & Math.abs(trajPoseGrab.getY() - now.getY()) < 1 & Math.abs(now.getHeading() - 0) < 0.1) {
                     drive.loop(0,0,0);
@@ -316,93 +318,25 @@ public class twoSpecimen extends OpMode {
                     n.groundIn();
                     walltimer.reset();
                     previousState = STATES.PULLSPECIMEN;
-                } else if (walltimer.seconds() > 1) {
-                    currentState = STATES.GOBACK;
+                } else if (walltimer.seconds() > 2) {
+                    currentState = STATES.PARK;
                 }
-                break;
-            case GOBACK:
-                if (currentState != previousState) {
-                    previousState = STATES.GOBACK;
-                    n.goUp(0);
-                    trajPoseGoBack = new Pose2d(new Translation2d(14, 4), new Rotation2d(Math.PI));
-                } else if (Math.abs(now.getX() - trajPoseGoBack.getX()) < 1 & Math.abs(now.getY() - trajPoseGoBack.getY()) < 1) {
-                    drive.loopFC(drive.imu.getRobotYawPitchRollAngles().getYaw(), 0,0,0);
-                    xPower = 0;
-                    yPower = 0;
-                    rotPower = 0;
-                    currentState = STATES.ROTATE;
-                }
-                now = (drive.nowPose);
-                rotPower = rSmPID.calculate(now.getHeading(), trajPoseGoBack.getHeading());
-                xPower =  txPID.calculate(now.getX(), trajPoseGoBack.getX());
-                yPower = tyPID.calculate(now.getY(), trajPoseGoBack.getY());
-                drive.loopFC(drive.imu.getRobotYawPitchRollAngles().getYaw(), yPower, xPower, rotPower);
-                break;
-            case ARMUP2:
-                if (currentState != previousState) {
-                    previousState = STATES.ARMUP2;
-                    n.goSpecimen(23);
-                    n.wristOut();
-                    maintainPose = new Pose2d(new Translation2d(14, 4), new Rotation2d(Math.PI));
-                } else if (n.slideMotor.getCurrentPosition()>2700) {
-                    drive.loopFC(drive.imu.getRobotYawPitchRollAngles().getYaw(), 0,0,0);
-                    xPower = 0;
-                    yPower = 0;
-                    rotPower = 0;
-                    currentState = STATES.PULL2;
-                }
-                now = (drive.nowPose);
-                rotPower = rSmPID.calculate(now.getHeading(), maintainPose.getHeading());
-                xPower =  txPID.calculate(now.getX(), maintainPose.getX());
-                yPower = tyPID.calculate(now.getY(), maintainPose.getY());
-                drive.loopFC(drive.imu.getRobotYawPitchRollAngles().getYaw(), 0, 0, rotPower);
-                break;
-            case PULL2:
-                if (currentState != previousState) {
-                    n.wristIn();
-                    pullWaiter.reset();
-                    previousState = STATES.PULL2;
-                } else if (pullWaiter.seconds() > 2) {
-                    currentState = STATES.BACK2;
-                }
-                drive.loopFC(drive.imu.getRobotYawPitchRollAngles().getYaw(), 0,0,0);
-                break;
-            case BACK2:
-                if (currentState != previousState) {
-                    trajPose2B = new Pose2d(new Translation2d(12, 4), new Rotation2d(Math.PI));
-                    previousState = STATES.BACK2;
-                } else if (Math.abs(now.getX() - trajPose2B.getX()) < 1) {
-                    drive.loopFC(drive.imu.getRobotYawPitchRollAngles().getYaw(), 0,0,0);
-                    xPower = 0;
-                    yPower = 0;
-                    rotPower = 0;
-                    currentState = STATES.RELEASE2;
-                }
-                now = (drive.nowPose);
-                rotPower = 0;
-                xPower =  txPID.calculate(now.getX(), trajPose2B.getX());
-                yPower = tyPID.calculate(now.getY(), trajPose2B.getY());
-                drive.loopFC(drive.imu.getRobotYawPitchRollAngles().getYaw(), yPower, xPower, rotPower);
-                break;
-            case RELEASE2:
-                n.release();
-                drive.loopFC(drive.imu.getRobotYawPitchRollAngles().getYaw(), 0,0,0);
-                currentState = STATES.PARK;
                 break;
             case PARK:
                 if (currentState != previousState) {
                     previousState = STATES.PARK;
                     n.goUp(0);
-                    trajPose2 = new Pose2d(new Translation2d(4, -26), new Rotation2d(Math.PI));
+                    n.wristIn();
+                    trajPose2 = new Pose2d(new Translation2d(-2, -36), new Rotation2d(0));
                 } else if (Math.abs(now.getX() - trajPose2.getX()) < 1 & Math.abs(now.getY() - trajPose2.getY()) < 1) {
-                    drive.loopFC(drive.imu.getRobotYawPitchRollAngles().getYaw(), 0,0,0);
+                    drive.loop(0,0,0);
                     xPower = 0;
                     yPower = 0;
                     rotPower = 0;
                     currentState = STATES.DONE;
                 }
                 now = (drive.nowPose);
-                rotPower = rSmPID.calculate(now.getHeading(), trajPose2.getHeading());
+                rotPower = rotPID.calculate(now.getHeading(), trajPose2.getHeading());
                 xPower =  txPID.calculate(now.getX(), trajPose2.getX());
                 yPower = tyPID.calculate(now.getY(), trajPose2.getY());
                 drive.loopFC(drive.imu.getRobotYawPitchRollAngles().getYaw(), yPower, xPower, rotPower);

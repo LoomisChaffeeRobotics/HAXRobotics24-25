@@ -25,9 +25,9 @@ public class nematocyst {
     private static final double Max_Extension = 22 * ticksPerInch; // Horizontal Max Ticks
     private static final double degPerTick = (double) 360/1425;
 
-    // PID constants
-    public double sP = 0.0015;
-    public double sI = 0.0005;
+//     PID constants
+    public double sP = 0.00175;
+    public double sI = 0.0075;
     public double sD = 0.00;
     public double pP = 0.0044;
     public double pI = 0.0002;
@@ -41,9 +41,9 @@ public class nematocyst {
     // PID variables
     private double integral = 0;
     private double lastError = 0;
-    private double targSlideHeight = 0;
-    private int targetSlidePosition = (int) (targSlideHeight * ticksPerInch);  // Starting at initial position (adjust)
-    private int targPivotPos;
+    public double targSlideHeight = 0;
+    public int targetSlidePosition = (int) (targSlideHeight * ticksPerInch);  // Starting at initial position (adjust)
+    public int targPivotPos;
 //    private int maxSlidePos;
     private int maxPivotPos = -350;
     boolean isPullingDown = false;
@@ -75,14 +75,14 @@ public class nematocyst {
         slidePID = new PIDController(sP, sI, sD);
         grab();
         wristIn();
-        outLimiter = new SlewRateLimiter(875, -100000000,0);
+        outLimiter = new SlewRateLimiter(11875, -100000000,0);
     }
 
     public void loop(double P, double I, double D) {
         targPivotPos = Math.min(0, Math.max(targPivotPos, maxPivotPos));
         // Ensure the motor does not exceed max forward extension
         double out;
-        if (!isPullingDown) {
+//        if (!isPullingDown) {
             if (!justWasTargAngDown) {
                 out = slidePID.calculate(slideMotor.getCurrentPosition(), targetSlidePosition);
                 pivotPower = calculatePID(targPivotPos, pivot.getCurrentPosition());
@@ -94,10 +94,10 @@ public class nematocyst {
                     justWasTargAngDown = false;
                 }
             }
-        } else {
-            out = slidePID.calculate(slideMotor.getCurrentPosition(), targetSlidePosition);
-            pivotPower = calculatePID(targPivotPos, pivot.getCurrentPosition());
-        }
+//        } else {
+//            out = slidePID.calculate(slideMotor.getCurrentPosition(), targetSlidePosition);
+//            pivotPower = calculatePID(targPivotPos, pivot.getCurrentPosition());
+//        }
         if (activelyPullingDown) {
             out = -1;
         }
@@ -172,7 +172,7 @@ public class nematocyst {
 //        targPivotPos = (int) (-5 - (pivAng * 105/190));
 //        targetSlidePosition = (int) (targSlideHeight * ticksPerInch);
         targPivotPos = -80;
-        targetSlidePosition = 3200;
+        targetSlidePosition = 3100;
         if (isTargAngDown) {
             justWasTargAngDown = true;
         }
@@ -182,7 +182,7 @@ public class nematocyst {
     public void goGround(double inches) {
 
         targPivotPos = -355;
-        targetSlidePosition = 2750;
+        targetSlidePosition = 1900;
         isTargAngDown = true;
         if (isTargAngDown) {
             justWasTargAngDown = false;
@@ -191,8 +191,8 @@ public class nematocyst {
         isPullingDown = false;
     }
     public void getSpecimen() {
-        targPivotPos = -300;
-        targetSlidePosition = 250;
+        targPivotPos = -315;
+        targetSlidePosition = 1500;
         if (isTargAngDown) {
             justWasTargAngDown = false;
         }
@@ -201,9 +201,8 @@ public class nematocyst {
         isPullingDown = false;
     }
     public void groundIn() {
-        targPivotPos = -355;
+        targPivotPos = -315;
         targetSlidePosition = 0;
-        isTargAngDown = true;
         if (isTargAngDown) {
             justWasTargAngDown = false;
         }
@@ -219,14 +218,14 @@ public class nematocyst {
         wristOut();
     }
     public boolean isAtTargetHeight() {
-        if (Math.abs(slideMotor.getCurrentPosition()/ticksPerInch - targSlideHeight) < 2) {
+        if (Math.abs(slideMotor.getCurrentPosition() - targetSlidePosition) < 320) {
             return true;
         } else {
             return false;
         }
     }
     public boolean isAtTargAng() {
-        if (Math.abs(pivot.getCurrentPosition() - targPivotPos) < 10) {
+        if (Math.abs(pivot.getCurrentPosition() - targPivotPos) < 15) {
             return true;
         } else {
             return false;

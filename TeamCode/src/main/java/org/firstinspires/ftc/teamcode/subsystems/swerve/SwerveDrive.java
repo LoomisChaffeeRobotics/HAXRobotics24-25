@@ -184,6 +184,9 @@ public class SwerveDrive {
 
         this.loop(fieldX, fieldY, rx);
     }
+    public void resetDirections() {
+        angleGetter.reset();
+    }
     public void loop(double x, double y, double rx) {
         angles = angleGetter.getBigPulleyAngles();
         angleGetter.loop();

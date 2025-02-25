@@ -47,7 +47,6 @@ public class teleOp extends OpMode {
     public boolean isRBPressed = false;
     public boolean wasRBLastPressed;
     public boolean isYPressed = false;
-    public boolean wasYPressed;
     public void buttonPressedRB() {
         if (gamepad2.right_bumper && !isRBPressed) {
             isRBPressed = true;
@@ -56,16 +55,6 @@ public class teleOp extends OpMode {
         if (!gamepad2.right_bumper && isRBPressed) {
             isRBPressed = false;
             wasRBLastPressed = true;
-        }
-    }
-    public void buttonPressedY() {
-        if (gamepad1.y && !isRBPressed) {
-            isYPressed = true;
-            wasYPressed = false;
-        }
-        if (!gamepad1.y && isRBPressed) {
-            isYPressed = false;
-            wasYPressed = true;
         }
     }
     @Override
@@ -104,10 +93,14 @@ public class teleOp extends OpMode {
             slide.goOut(36.0);
         } else if (gamepad2.right_trigger > 0.5) {
             slide.touchBar();
-        } else if (gamepad2.left_trigger > 0.5) {
+        }
+        if (gamepad2.left_trigger > 0.5) {
             slide.hangReal();
         } else {
             slide.activelyPullingDown = false;
+        }
+        if (gamepad1.left_trigger > 0.5) {
+            SwerveDrive.resetDirections();
         }
 
         if (gamepad1.x) {
@@ -116,14 +109,11 @@ public class teleOp extends OpMode {
 
 
         buttonPressedRB();
-//        buttonPressedY();
-//        if (wasYPressed) {
-//            if (slowMode) {
-//                slowMode = false;
-//            } else {
-//                slowMode = true;
-//            }
-//        }
+        if (gamepad1.y) {
+            slowMode = true;
+        } else if (gamepad1.b) {
+            slowMode = false;
+        }
         if (slowMode) {
             SwerveDrive.loop(.3 * xAndY[0], .3 * xAndY[1], (gamepad2.right_stick_x + gamepad1.right_stick_x)/4);
         } else {
