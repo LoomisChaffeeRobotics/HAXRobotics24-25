@@ -27,7 +27,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 
 public class voltageToAngleConstants {
-    double smallToBigPulley = (double) 15 / 38; // small:big --> small deg to big deg
+    double smallToBigPulley = (double) 16 / 38; // small:big --> small deg to big deg
     int[] rotations; // full small pulley rotations, added to how much degrees of current rotation
     ArrayList<AnalogInput> encoders = new ArrayList<>(); // list of objects, comes from user getting hardware map inputs
     public String logFilePath = String.format("%s/FIRST/wheelAngles.txt", Environment.getExternalStorageDirectory().getAbsolutePath());
@@ -71,12 +71,11 @@ public class voltageToAngleConstants {
         lastLineValue = fileDataRaw;
         lastLineValue = lastLineValue.replace("[", "").replace("]", "");
         valuesReading = lastLineValue.split(",");
+
         angle = Arrays.stream(Arrays.copyOfRange(valuesReading, 0, 4)).mapToDouble(Double::parseDouble).toArray();
         rotations = Arrays.stream(Arrays.copyOfRange(valuesReading, 4, 8)).mapToInt(Integer::parseInt).toArray();
         sm = Arrays.stream(Arrays.copyOfRange(valuesReading, 8, 12)).mapToDouble(Double::parseDouble).toArray();
         offsets = Arrays.stream(Arrays.copyOfRange(valuesReading, 12, 16)).mapToDouble(Double::parseDouble).toArray();
-        // These offsets get read once, but don't get rewritten unless reset in resetStorage
-        // This is why there's another array needed but not in loop()
         System.arraycopy(valuesReading, 12, offsetStrings, 0, offsets.length);
         System.arraycopy(sm, 0, lastSm, 0, 4);
         opMode.telemetry.addLine("Done Reading");
@@ -174,16 +173,6 @@ public class voltageToAngleConstants {
         t.update();
     }
     public void loop() {
-//        ArrayList<Object> writingFinal;
-        /*      writing final looks like this
-       Big Angle            M1, M2... MN
-       Small rotation       ...
-       Small Angle          ...
-
-       except it's all one line and it actually looks like:
-
-        */
-
         for (int m = 0; m < modulesTable.size(); m++) {
             voltages[m] = encoders.get(m).getVoltage();
         }
@@ -197,10 +186,15 @@ public class voltageToAngleConstants {
         opMode.telemetry.addData("Small rotations", Arrays.toString(rotations));
         opMode.telemetry.addData("Small Angles", Arrays.toString(sm));
         System.arraycopy(sm, 0, lastSm, 0, 4);
-        // write to the txt everything (it overwrites it thankfully)
-        // everything being big pulley angle > small pulley full rotations > small pulley angle pose
+
     }
     public void stopAndLog() {
+        /*      writing final looks like this
+        Big Angle            M1, M2... MN
+        Small rotation       M1 ...
+        Small Angle          M1 ...
+        Offsets              M1 ...
+         */
         for (int m = 0; m < modulesTable.size(); m++) {
             voltages[m] = encoders.get(m).getVoltage();
         }
